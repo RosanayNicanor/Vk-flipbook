@@ -70,7 +70,7 @@
     background: #000;
   }
 
-  .up-logo-wrap { margin-bottom: 15px; }
+  .up-logo-wrap { margin-bottom: 5px; }
   .up-title-wrap { margin-bottom: 44px; }
 
   .up-logo-img  { height: 15px;  width: auto; display: block; }
@@ -159,7 +159,7 @@
       radial-gradient(ellipse 80% 70% at 50% 44%, #131313 0%, #000 78%);
   }
 
-  #canvasWrap { position: absolute; inset: 0; transition: opacity .22s ease; will-change: transform; transform-origin: 0 0; }
+  #canvasWrap { position: absolute; inset: 0; transition: opacity .22s ease; }
   #canvasWrap canvas { position: absolute; inset: 0; }
   #cv-anno { transition: opacity .25s ease; }
   #cv-anno, #cv-live { pointer-events: none; }
@@ -558,17 +558,19 @@ function layout(){
   offY = (cssH - H)/2;
 }
 
-/* contexto en coords de libro: origen en lomo-arriba */
+/* contexto en coords de libro: origen en lomo-arriba, con zoom y pan */
 function bookSpace(ctx){
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.translate(offX + W, offY);
+  const tx = ((offX + W - cssW/2) * zoom + cssW/2 + panX) * dpr;
+  const ty = ((offY - cssH/2) * zoom + cssH/2 + panY) * dpr;
+  ctx.setTransform(zoom * dpr, 0, 0, zoom * dpr, tx, ty);
 }
 
 /* ═════════════════════════════════════════
    RENDER PDF (nítido)
 ═════════════════════════════════════════ */
 async function getBitmap(p){
-  const targetW = Math.min(2800, Math.round(W * dpr * 1.4));
+  /* resolución = ancho CSS × DPR × zoom activo × factor de calidad */
+  const targetW = Math.min(3200, Math.round(W * dpr * Math.max(zoom, 1) * 1.9));
   const key = `${p}@${targetW}`;
   if (pageCache.has(key)){ const v = pageCache.get(key); pageCache.delete(key); pageCache.set(key, v); return v; }
   const page = await pdfDoc.getPage(p);
@@ -590,8 +592,14 @@ async function ensure(pages){
 }
 function bm(p){
   if (!p) return null;
-  const targetW = Math.min(2800, Math.round(W * dpr * 1.4));
-  return pageCache.get(`${p}@${targetW}`) || null;
+  const targetW = Math.min(3200, Math.round(W * dpr * Math.max(zoom, 1) * 1.9));
+  const key = `${p}@${targetW}`;
+  if (pageCache.has(key)){
+    const v = pageCache.get(key); pageCache.delete(key); pageCache.set(key, v); return v;
+  }
+  /* fallback: cualquier versión cacheada de esta página (evita flash blanco) */
+  for (const [k, v] of pageCache){ if (k.startsWith(`${p}@`)) return v; }
+  return null;
 }
 function prefetch(){
   const [L,R] = spreadPages(spread);
@@ -1179,24 +1187,40 @@ function endStroke(){
 }
 
 /* ═════════════════════════════════════════
-   ZOOM / PAN
+   ZOOM / PAN  — aplicado en canvas, no CSS
 ═════════════════════════════════════════ */
 let zoom = 1, panX = 0, panY = 0;
-const ptrs = new Map();   // pointerId → {x,y,type} en stage coords
+const ptrs = new Map();
 let pinch = null;
 
 function clampPan(px, py, z){
   z = z != null ? z : zoom;
-  return {
-    x: Math.max(cssW * (1 - z), Math.min(0, px)),
-    y: Math.max(cssH * (1 - z), Math.min(0, py))
-  };
+  if (z <= 1.001) return { x: 0, y: 0 };
+  const mx = cssW * (z - 1) / 2;
+  const my = cssH * (z - 1) / 2;
+  return { x: Math.max(-mx, Math.min(mx, px)), y: Math.max(-my, Math.min(my, py)) };
 }
+
+let zoomRenderTimer = null;
 function applyZoom(){
-  wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+  if (!pdfDoc || fold) return;
+  drawStatic();   /* inmediato con bitmaps existentes (sin flash blanco) */
+  clearTimeout(zoomRenderTimer);
+  zoomRenderTimer = setTimeout(async () => {
+    if (!pdfDoc || fold) return;
+    /* NO limpiar caché: las versiones viejas quedan como fallback */
+    const [L,R] = spreadPages(spread);
+    await ensure([L,R]);   /* renderiza nuevas versiones a resolución correcta */
+    drawStatic();           /* reemplaza con las nuevas nítidas */
+    prefetch();
+  }, 260);
 }
 function resetZoom(){
-  zoom = 1; panX = 0; panY = 0; applyZoom();
+  zoom = 1; panX = 0; panY = 0;
+  if (pdfDoc && !fold){
+    const [L,R] = spreadPages(spread);
+    ensure([L,R]).then(() => drawStatic());
+  }
 }
 function touchPtrs(){ return [...ptrs.values()].filter(p => p.type === 'touch'); }
 
@@ -1207,11 +1231,14 @@ let pd = null;
 let doubleTapT = 0, doubleTapSX = 0, doubleTapSY = 0;
 
 function bxy(e){
-  // Convierte coords del evento → espacio del libro (origen en lomo-arriba)
   const r = stage.getBoundingClientRect();
-  const cx = (e.clientX - r.left - panX) / zoom;   // undo CSS translate+scale
-  const cy = (e.clientY - r.top  - panY) / zoom;
-  return { x: cx - (offX + W), y: cy - offY };
+  const sx = e.clientX - r.left;
+  const sy = e.clientY - r.top;
+  /* inverso de bookSpace: screen → espacio del libro */
+  return {
+    x: (sx - cssW/2 - panX) / zoom + cssW/2 - offX - W,
+    y: (sy - cssH/2 - panY) / zoom + cssH/2 - offY
+  };
 }
 function sxy(e){
   const r = stage.getBoundingClientRect();
@@ -1234,9 +1261,11 @@ stage.addEventListener('pointerdown', e => {
     const [a, b2] = tp;
     const midX = (a.x + b2.x) / 2, midY = (a.y + b2.y) / 2;
     pinch = {
-      initZoom: zoom, initPanX: panX, initPanY: panY,
+      initZoom: zoom,
       initDist: Math.max(1, Math.hypot(b2.x - a.x, b2.y - a.y)),
-      midC: { x: (midX - panX) / zoom, y: (midY - panY) / zoom }
+      /* punto relativo al centro de pantalla, a zoom actual */
+      midBX: (midX - cssW/2 - panX) / zoom,
+      midBY: (midY - cssH/2 - panY) / zoom
     };
     return;
   }
@@ -1297,9 +1326,10 @@ stage.addEventListener('pointermove', e => {
     const dist = Math.hypot(b2.x - a.x, b2.y - a.y);
     const mid = { x: (a.x + b2.x)/2, y: (a.y + b2.y)/2 };
     const nz = Math.max(1, Math.min(4, pinch.initZoom * dist / pinch.initDist));
-    const nx = mid.x - pinch.midC.x * nz;
-    const ny = mid.y - pinch.midC.y * nz;
-    const c = clampPan(nx, ny, nz);
+    /* el punto midB debe quedar bajo mid */
+    const npx = mid.x - cssW/2 - pinch.midBX * nz;
+    const npy = mid.y - cssH/2 - pinch.midBY * nz;
+    const c = clampPan(npx, npy, nz);
     zoom = nz; panX = c.x; panY = c.y;
     applyZoom();
     return;
@@ -1406,10 +1436,11 @@ document.addEventListener('keydown', e => {
 /* ── wheel: pinch Mac trackpad (ctrlKey) y scroll ── */
 function scaleAt(sx, sy, factor){
   const nz = Math.max(1, Math.min(4, zoom * factor));
-  if (nz === zoom) return;
-  const cx = (sx - panX) / zoom;
-  const cy = (sy - panY) / zoom;
-  const c = clampPan(sx - cx * nz, sy - cy * nz, nz);
+  if (Math.abs(nz - zoom) < 0.001) return;
+  /* mantener el punto (sx,sy) fijo en pantalla */
+  const npx = panX - (sx - cssW/2 - panX) / zoom * (nz - zoom);
+  const npy = panY - (sy - cssH/2 - panY) / zoom * (nz - zoom);
+  const c = clampPan(npx, npy, nz);
   zoom = nz; panX = c.x; panY = c.y;
   applyZoom();
 }
@@ -1423,7 +1454,6 @@ stage.addEventListener('wheel', e => {
     const factor = Math.pow(0.998, e.deltaY * 2.2);
     scaleAt(s.x, s.y, factor);
   } else {
-    /* scroll para pan cuando hay zoom, o pasar página cuando no */
     if (zoom > 1.05){
       const c = clampPan(panX - e.deltaX, panY - e.deltaY);
       panX = c.x; panY = c.y;
