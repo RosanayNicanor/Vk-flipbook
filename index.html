@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+
+<!-- PWA / Add to Home Screen -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="VK Studio" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#000000" />
+<meta name="application-name" content="VK Studio" />
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png" />
+
+<!-- Manifest -->
+<link rel="manifest" href="manifest.json" />
+
+<title>VK Studio — Guía Interactiva</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pinyon+Script&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #000;
+    --panel: rgba(13,13,13,.88);
+    --line: #1e1e1e;
+    --line2: #2c2c2c;
+    --pink: #F33283;
+    --blush: #FF7FB5;
+    --pastel: #FFACD6;
+    --white: #fff;
+    --gray: #EDEDED;
+    --muted: #6e6e6e;
+    --danger: #EF4444;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--black);
+    color: var(--gray);
+    font-family: 'Satoshi','Helvetica Neue',sans-serif;
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
+  .script { font-family:'Pinyon Script',cursive; font-weight:400; }
+
+  button { font-family: inherit; }
+
+  /* ════════ UPLOAD ════════ */
+  #screen-upload {
+    height: 100%; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px; position: relative;
+    background: #000;
+  }
+
+  .up-logo-wrap { margin-bottom: 15px; }
+  .up-title-wrap { margin-bottom: 44px; }
+
+  .up-logo-img  { height: 15px;  width: auto; display: block; }
+  .up-title-img { height: 148px; width: auto; max-width: 88vw; display: block; }
+  .tb-logo-img  { height: 15px;  width: auto; display: block; flex-shrink: 0; }
+
+  .svg-placeholder { display: block; }
+
+  .upload-btn {
+    position: relative;
+    border: 1px solid rgba(255,255,255,.28); background: none;
+    color: rgba(255,255,255,.9); font-family: inherit;
+    font-size: 11px; font-weight: 700; letter-spacing: .35em; text-transform: uppercase;
+    padding: 15px 52px; border-radius: 2px; cursor: pointer;
+    transition: border-color .25s, color .25s;
+  }
+  .upload-btn:hover { border-color: var(--pink); color: var(--pink); }
+  .upload-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+  .upload-foot {
+    position: absolute; bottom: max(22px, env(safe-area-inset-bottom));
+    font-size: 9px; letter-spacing: .3em; text-transform: uppercase;
+    color: rgba(255,255,255,.18); text-align: center; line-height: 2.2;
+  }
+
+  /* ════════ LOADING ════════ */
+  #screen-loading {
+    display: none; height: 100%;
+    flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  }
+  .loader {
+    width: 36px; height: 36px;
+    border: 1.5px solid var(--line); border-top-color: var(--pink);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { font-size: 10px; letter-spacing: .4em; text-transform: uppercase; color: var(--muted); }
+
+  /* ════════ APP ════════ */
+  #app { display: none; height: 100%; flex-direction: column; }
+
+  /* Topbar */
+  #topbar {
+    height: 56px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--black);
+    gap: 12px; z-index: 60;
+  }
+  .tb-left { display: flex; align-items: baseline; gap: 12px; min-width: 0; flex: 1; }
+  .tb-left .vk { font-weight: 900; font-style: italic; font-size: 16px; color: var(--white); white-space: nowrap; }
+  .tb-left .vk i { color: var(--pink); font-style: inherit; }
+  .doc-name {
+    font-size: 11px; color: var(--muted); letter-spacing: .04em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;
+  }
+
+  .tb-center { display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    width: 44px; height: 44px;
+    background: none; border: 1px solid var(--line); border-radius: 6px;
+    color: var(--gray); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .2s, color .2s, opacity .2s;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { border-color: var(--pink); color: var(--pink); }
+  .icon-btn:disabled { opacity: .22; pointer-events: none; }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  .page-indicator {
+    font-size: 12px; letter-spacing: .12em; color: var(--muted);
+    min-width: 86px; text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .page-indicator b { color: var(--white); font-weight: 700; }
+
+  .tb-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+
+  /* Stage */
+  #stage {
+    flex: 1; position: relative; overflow: hidden;
+    touch-action: none;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E"),
+      radial-gradient(ellipse 80% 70% at 50% 44%, #131313 0%, #000 78%);
+  }
+
+  #canvasWrap { position: absolute; inset: 0; transition: opacity .22s ease; will-change: transform; transform-origin: 0 0; }
+  #canvasWrap canvas { position: absolute; inset: 0; }
+  #cv-anno { transition: opacity .25s ease; }
+  #cv-anno, #cv-live { pointer-events: none; }
+
+  .stage-hint {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: #3a3a3a;
+    pointer-events: none; white-space: nowrap; transition: opacity .4s;
+  }
+
+  /* mode badge — removed */
+  #anno-badge { display: none !important; }
+
+  /* Progress */
+  #progress {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+    background: rgba(255,255,255,.05); z-index: 5; pointer-events: none;
+  }
+  #progress i {
+    display: block; height: 100%; width: 0%;
+    background: linear-gradient(to right, var(--pink), var(--blush));
+    transition: width .5s cubic-bezier(.36,.1,.22,1);
+  }
+
+  /* ════════ TOOLBAR ════════ */
+  #toolbar {
+    flex-shrink: 0;
+    background: rgba(0,0,0,.55);
+    -webkit-backdrop-filter: blur(32px) saturate(1.4); backdrop-filter: blur(32px) saturate(1.4);
+    border-top: 1px solid rgba(255,255,255,.055);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    z-index: 70;
+  }
+
+  /* ── modo switcher premium ── */
+  .mode-bar {
+    display: flex; align-items: center;
+    background: rgba(255,255,255,.055);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 100px; padding: 3px; gap: 0;
+  }
+  .mode-btn {
+    display: flex; align-items: center; gap: 7px;
+    background: none; border: none; border-radius: 100px;
+    color: rgba(255,255,255,.32); font-family: inherit;
+    font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase;
+    padding: 10px 26px; cursor: pointer;
+    transition: background .22s, color .22s;
+    min-height: 42px; position: relative;
+  }
+  .mode-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .mode-btn.on {
+    background: rgba(255,255,255,.11);
+    color: rgba(255,255,255,.92);
+  }
+  .mode-btn.on::after {
+    content: ''; position: absolute;
+    bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--pink);
+  }
+  .mode-div {
+    width: 1px; height: 16px;
+    background: rgba(255,255,255,.1); flex-shrink: 0;
+  }
+
+  #tools {
+    display: none; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 8px; width: 100%; max-width: 980px;
+  }
+  #tools.show { display: flex; }
+
+  .tool-group { display: flex; align-items: center; gap: 6px; }
+
+  .vdiv { width: 1px; height: 30px; background: var(--line2); margin: 0 4px; flex-shrink: 0; }
+
+  .tool {
+    width: 48px; height: 48px;
+    background: #131313; border: 1px solid var(--line2); border-radius: 9px;
+    color: #b9b9b9; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .18s; position: relative;
+  }
+  .tool svg { width: 21px; height: 21px; }
+  .tool.on {
+    background: rgba(243,50,131,.14);
+    border-color: var(--pink); color: var(--pink);
+    box-shadow: 0 0 16px rgba(243,50,131,.25);
+  }
+
+  /* thickness */
+  .thick-wrap { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+  .thick-dot-box {
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    background: #131313; border: 1px solid var(--line2); border-radius: 8px;
+  }
+  #thick-dot { background: var(--pink); border-radius: 50%; width: 6px; height: 6px; transition: width .1s, height .1s; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 120px; height: 32px; background: transparent; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 3px; background: var(--line2); border-radius: 2px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--pink); border: 3px solid #000;
+    margin-top: -9.5px;
+    box-shadow: 0 0 10px rgba(243,50,131,.5);
+  }
+
+  /* colors */
+  .swatches { display: flex; gap: 7px; padding: 0 4px; }
+  .sw {
+    width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.14);
+    transition: transform .15s, border-color .15s;
+  }
+  .sw.on { border-color: var(--pink); transform: scale(1.12); box-shadow: 0 0 12px rgba(243,50,131,.4); }
+
+  .text-btn {
+    display: flex; align-items: center; gap: 7px;
+    background: #131313; border: 1px solid var(--line2); border-radius: 9px;
+    color: #b9b9b9; font-size: 11px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase;
+    padding: 0 16px; height: 48px; cursor: pointer;
+    transition: all .18s; white-space: nowrap;
+  }
+  .text-btn svg { width: 17px; height: 17px; }
+  .text-btn:hover { color: var(--white); border-color: #3c3c3c; }
+  .text-btn.danger:hover { color: var(--danger); border-color: var(--danger); }
+  .text-btn.confirm {
+    background: var(--danger); border-color: var(--danger); color: #fff;
+  }
+
+  /* ════════ GRID PAGES ════════ */
+  #grid {
+    position: fixed; inset: 0; z-index: 150;
+    display: none; flex-direction: column;
+    background: rgba(0,0,0,.92);
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  }
+  #grid.show { display: flex; }
+  .grid-head {
+    height: 56px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px; border-bottom: 1px solid var(--line);
+  }
+  .grid-head span { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
+  .grid-body {
+    flex: 1; overflow-y: auto; padding: 22px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 16px; align-content: start;
+    -webkit-overflow-scrolling: touch;
+  }
+  .gp {
+    cursor: pointer; border-radius: 6px; overflow: hidden;
+    border: 2px solid transparent; position: relative;
+    background: #141414; aspect-ratio: var(--pgar, 0.707);
+    transition: border-color .15s, transform .15s;
+  }
+  .gp:hover { transform: translateY(-2px); }
+  .gp.cur { border-color: var(--pink); box-shadow: 0 0 18px rgba(243,50,131,.3); }
+  .gp canvas { width: 100%; height: 100%; display: block; }
+  .gp i {
+    position: absolute; bottom: 5px; right: 7px;
+    font-style: normal; font-size: 10px; font-weight: 700;
+    color: #fff; background: rgba(0,0,0,.6);
+    padding: 2px 7px; border-radius: 20px;
+  }
+
+  @media (max-width: 740px) {
+    .doc-name { display: none; }
+    .seg button { padding: 11px 18px; }
+    #tools { gap: 6px; }
+    .vdiv { display: none; }
+    input[type=range] { width: 90px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ UPLOAD ═══ -->
+<div id="screen-upload">
+
+  <div class="up-logo-wrap">
+    <img src="assets/logo-inicio.svg" alt="VK Studio" class="up-logo-img" />
+  </div>
+
+  <div class="up-title-wrap">
+    <img src="assets/logo-titulo.svg" alt="Master Aplicador Expert" class="up-title-img" />
+  </div>
+
+  <button class="upload-btn">
+    Upload PDF
+    <input type="file" id="file-input" accept="application/pdf" />
+  </button>
+
+  <p class="upload-foot">Master Aplicador Expert — 2026<br>Optimizado para iPad · Apple Pencil</p>
+</div>
+
+<!-- ═══ LOADING ═══ -->
+<div id="screen-loading">
+  <div class="loader"></div>
+  <p class="loader-text">Preparando la guía</p>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <header id="topbar">
+    <div class="tb-left">
+      <img src="assets/logo-topbar.svg" alt="VK Studio" class="tb-logo-img" />
+      <span class="doc-name" id="doc-name"></span>
+    </div>
+    <div class="tb-center">
+      <button class="icon-btn" id="btn-prev" aria-label="Anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="page-indicator" id="pind"></span>
+      <button class="icon-btn" id="btn-next" aria-label="Siguiente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+    <div class="tb-right">
+      <button class="icon-btn" id="btn-grid" aria-label="Páginas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-fs" aria-label="Pantalla completa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3.5H5A1.5 1.5 0 0 0 3.5 5v3M16 3.5h3A1.5 1.5 0 0 1 20.5 5v3M8 20.5H5A1.5 1.5 0 0 1 3.5 19v-3M16 20.5h3a1.5 1.5 0 0 0 1.5-1.5v-3"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-new" aria-label="Nuevo PDF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3.5V8h4.5M12 11v6M9 14h6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="stage">
+    <div id="canvasWrap">
+      <canvas id="cv-book"></canvas>
+      <canvas id="cv-anno"></canvas>
+      <canvas id="cv-live"></canvas>
+    </div>
+    <div id="anno-badge">Modo anotación — páginas bloqueadas</div>
+    <p class="stage-hint" id="stage-hint">Desliza o arrastra la esquina para pasar la hoja</p>
+    <div id="progress"><i id="progress-fill"></i></div>
+  </div>
+
+  <div id="toolbar">
+    <div class="mode-bar">
+      <button id="seg-read" class="mode-btn on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 4.8 7.6 4 4.5 4v14c3.1 0 5.5.8 7.5 2.5 2-1.7 4.4-2.5 7.5-2.5V4c-3.1 0-5.5.8-7.5 2.5zM12 6.5v14"/></svg>
+        Leer
+      </button>
+      <span class="mode-div"></span>
+      <button id="seg-draw" class="mode-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.9a2.1 2.1 0 0 1 3 3L7 19.5 3 21l1.5-4z"/></svg>
+        Anotar
+      </button>
+    </div>
+
+    <div id="tools">
+      <div class="tool-group">
+        <button class="tool on" data-tool="pen" aria-label="Pluma">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.9a2.1 2.1 0 0 1 3 3L7 19.5 3 21l1.5-4z"/></svg>
+        </button>
+        <button class="tool" data-tool="marker" aria-label="Marcador">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7-4-4-7 7v4z"/><path d="M18 13l-4-4 2-2a2.1 2.1 0 0 1 3 0l1 1a2.1 2.1 0 0 1 0 3zM8 19H5"/></svg>
+        </button>
+        <button class="tool" data-tool="high" aria-label="Resaltador">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l-4.5 4.5M14 4l6 6-8.5 8.5-6-6z"/><path d="M5.5 12.5l6 6"/><path d="M3 21h7" opacity=".5"/></svg>
+        </button>
+        <button class="tool" data-tool="zone" aria-label="Marcar zona">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="3.5 3.5"><rect x="4" y="5.5" width="16" height="13" rx="1.5"/></svg>
+        </button>
+        <button class="tool" data-tool="arrow" aria-label="Flecha">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5M19 5h-8M19 5v8"/></svg>
+        </button>
+        <button class="tool" data-tool="eraser" aria-label="Borrador">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 13.5L11 5a1.8 1.8 0 0 0-2.6 0L3.5 10a1.8 1.8 0 0 0 0 2.6l6 6c.4.4.9.6 1.4.6H20"/><path d="M7 8.5l8 8"/></svg>
+        </button>
+      </div>
+
+      <div class="vdiv"></div>
+
+      <div class="thick-wrap">
+        <div class="thick-dot-box"><div id="thick-dot"></div></div>
+        <input type="range" id="thick" min="1" max="30" step="1" value="3" aria-label="Grosor">
+      </div>
+
+      <div class="vdiv"></div>
+
+      <div class="swatches" id="swatches"></div>
+
+      <div class="vdiv"></div>
+
+      <div class="tool-group">
+        <button class="text-btn" id="btn-undo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8h11a5.5 5.5 0 0 1 0 11H8"/><path d="M7 4.5L3.5 8 7 11.5"/></svg>
+          Deshacer
+        </button>
+        <button class="text-btn danger" id="btn-clear">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5h16M9 6.5V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v1.5M18.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 19V6.5M10 11v5M14 11v5"/></svg>
+          <span id="clear-label">Borrar todo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GRID ═══ -->
+<div id="grid">
+  <div class="grid-head">
+    <span>Todas las páginas</span>
+    <button class="icon-btn" id="grid-close" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="grid-body" id="grid-body"></div>
+</div>
+
+<script>
+'use strict';
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ═════════════════════════════════════════
+   ESTADO GLOBAL
+═════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+
+let pdfDoc = null, totalPages = 0, aspect = 1.414;
+let spread = 0;                 // índice de pliego: 0=[_,1], n=[2n,2n+1]
+let mode = 'read';              // 'read' | 'draw'
+let fold = null;                // animación/drag de hoja activa
+let W = 0, H = 0, offX = 0, offY = 0, dpr = 1, cssW = 0, cssH = 0;
+let fileName = '';
+let rafId = 0;
+
+const bookCv = $('cv-book'), annoCv = $('cv-anno'), liveCv = $('cv-live');
+const bctx = bookCv.getContext('2d');
+const actx = annoCv.getContext('2d');
+const lctx = liveCv.getContext('2d');
+const stage = $('stage');
+const wrap = $('canvasWrap');
+
+const pageCache = new Map();    // `${p}@${w}` → canvas bitmap
+const PCACHE_MAX = 22;
+
+/* Anotaciones: page → { ops:[], store:canvas } */
+const anno = new Map();
+const undoStack = [];
+let lastDrawnPage = null;
+const STORE_W = 1200;
+let STORE_H = 1697;
+
+/* Herramientas */
+const TOOLS = {
+  pen:    { w: 3,  min: 1,  max: 10 },
+  marker: { w: 8,  min: 3,  max: 18 },
+  high:   { w: 16, min: 8,  max: 30, alpha: .4 },
+  zone:   { w: 3,  min: 2,  max: 6 },
+  arrow:  { w: 4,  min: 2,  max: 9 },
+  eraser: { w: 26, min: 10, max: 60 }
+};
+let tool = 'pen';
+let color = '#F33283';
+const SWATCH_COLORS = ['#F33283','#FFD60A','#3B82F6','#EF4444','#111111','#FFFFFF'];
+
+function totalSpreads(){ return Math.floor(totalPages/2) + 1; }
+function spreadPages(s){
+  const L = s*2, R = s*2+1;
+  return [ L>=1 && L<=totalPages ? L : null, R<=totalPages ? R : null ];
+}
+
+/* ═════════════════════════════════════════
+   LAYOUT / HiDPI
+═════════════════════════════════════════ */
+function layout(){
+  cssW = stage.clientWidth; cssH = stage.clientHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 3);
+  [bookCv, annoCv, liveCv].forEach(cv => {
+    cv.width = Math.round(cssW * dpr);
+    cv.height = Math.round(cssH * dpr);
+    cv.style.width = cssW + 'px';
+    cv.style.height = cssH + 'px';
+  });
+  const availW = cssW - 100, availH = cssH - 64;
+  W = Math.max(120, Math.min(availW/2, availH/aspect));
+  H = W * aspect;
+  W = Math.floor(W); H = Math.floor(H);
+  offX = (cssW - 2*W)/2;
+  offY = (cssH - H)/2;
+}
+
+/* contexto en coords de libro: origen en lomo-arriba */
+function bookSpace(ctx){
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.translate(offX + W, offY);
+}
+
+/* ═════════════════════════════════════════
+   RENDER PDF (nítido)
+═════════════════════════════════════════ */
+async function getBitmap(p){
+  const targetW = Math.min(2800, Math.round(W * dpr * 1.4));
+  const key = `${p}@${targetW}`;
+  if (pageCache.has(key)){ const v = pageCache.get(key); pageCache.delete(key); pageCache.set(key, v); return v; }
+  const page = await pdfDoc.getPage(p);
+  const base = page.getViewport({ scale: 1 });
+  const scale = targetW / base.width;
+  const vp = page.getViewport({ scale });
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+  const ctx = cv.getContext('2d', { alpha: false });
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  pageCache.set(key, cv);
+  if (pageCache.size > PCACHE_MAX) pageCache.delete(pageCache.keys().next().value);
+  return cv;
+}
+async function ensure(pages){
+  const need = pages.filter(p => p);
+  await Promise.all(need.map(getBitmap));
+}
+function bm(p){
+  if (!p) return null;
+  const targetW = Math.min(2800, Math.round(W * dpr * 1.4));
+  return pageCache.get(`${p}@${targetW}`) || null;
+}
+function prefetch(){
+  const [L,R] = spreadPages(spread);
+  const cand = [L,R, R?R+1:null, R?R+2:null, L?L-1:null, L?L-2:null].filter(p => p && p>=1 && p<=totalPages);
+  cand.forEach(p => { getBitmap(p); });
+}
+
+/* ═════════════════════════════════════════
+   GEOMETRÍA DEL PLIEGUE
+═════════════════════════════════════════ */
+function clipHalf(poly, M, u, keep){
+  const out = [];
+  const sd = pt => ((pt.x-M.x)*u.x + (pt.y-M.y)*u.y) * keep;
+  for (let i=0; i<poly.length; i++){
+    const a = poly[i], b = poly[(i+1)%poly.length];
+    const sa = sd(a), sb = sd(b);
+    if (sa >= 0) out.push(a);
+    if ((sa >= 0) !== (sb >= 0)){
+      const t = sa / (sa - sb);
+      out.push({ x: a.x+(b.x-a.x)*t, y: a.y+(b.y-a.y)*t });
+    }
+  }
+  return out;
+}
+function reflectPt(pt, M, u){
+  const s = (pt.x-M.x)*u.x + (pt.y-M.y)*u.y;
+  return { x: pt.x - 2*s*u.x, y: pt.y - 2*s*u.y };
+}
+function applyReflect(ctx, M, u){
+  const mu = M.x*u.x + M.y*u.y;
+  ctx.transform(1-2*u.x*u.x, -2*u.x*u.y, -2*u.x*u.y, 1-2*u.y*u.y, 2*mu*u.x, 2*mu*u.y);
+}
+function pathPoly(ctx, poly){
+  ctx.beginPath();
+  poly.forEach((p,i) => i ? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+  ctx.closePath();
+}
+function clampP(P, C){
+  let p = { x: P.x, y: P.y };
+  const Sy = C.y;                       // punto del lomo en el mismo borde
+  let dx = p.x, dy = p.y - Sy, d = Math.hypot(dx,dy);
+  if (d > W){ p.x = dx/d*W; p.y = Sy + dy/d*W; }
+  const Ty = C.y === 0 ? H : 0;
+  const diag = Math.hypot(W,H);
+  dx = p.x; dy = p.y - Ty; d = Math.hypot(dx,dy);
+  if (d > diag){ p.x = dx/d*diag; p.y = Ty + dy/d*diag; }
+  return p;
+}
+
+/* ═════════════════════════════════════════
+   DIBUJO DEL LIBRO
+═════════════════════════════════════════ */
+function pageRectPoly(side){ // side: +1 derecha, -1 izquierda
+  return side > 0
+    ? [{x:0,y:0},{x:W,y:0},{x:W,y:H},{x:0,y:H}]
+    : [{x:-W,y:0},{x:0,y:0},{x:0,y:H},{x:-W,y:H}];
+}
+
+function drawBase(ctx, xa, xb){
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.85)';
+  ctx.shadowBlur = 60; ctx.shadowOffsetY = 26;
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fillRect(xa, 0, xb-xa, H);
+  ctx.restore();
+}
+
+function drawPageFace(ctx, bmp, rx){
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(rx, 0, W, H);
+  if (bmp){
+    const bh = W * (bmp.height / bmp.width);
+    ctx.drawImage(bmp, rx, Math.max(0,(H-bh)/2), W, Math.min(H,bh));
+  }
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, 'rgba(255,255,255,.05)');
+  g.addColorStop(.12, 'rgba(255,255,255,0)');
+  g.addColorStop(.88, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,.07)');
+  ctx.fillStyle = g;
+  ctx.fillRect(rx, 0, W, H);
+}
+
+function drawSpine(ctx, hasL, hasR){
+  const sw = W * .07;
+  if (hasR){
+    const g = ctx.createLinearGradient(0,0,sw,0);
+    g.addColorStop(0,'rgba(0,0,0,.30)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0,0,sw,H);
+  }
+  if (hasL){
+    const g = ctx.createLinearGradient(0,0,-sw,0);
+    g.addColorStop(0,'rgba(0,0,0,.30)'); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(-sw,0,sw,H);
+  }
+  if (hasL && hasR){
+    ctx.fillStyle = 'rgba(0,0,0,.45)';
+    ctx.fillRect(-0.75, 0, 1.5, H);
+  }
+}
+
+function drawEdges(ctx){
+  const [L,R] = spreadPages(spread);
+  const remain = R ? Math.min(5, Math.ceil((totalPages - R)/2)) : 0;
+  const read   = L ? Math.min(5, Math.ceil((L-1)/2)) : 0;
+  ctx.lineWidth = 1;
+  for (let i=1; i<=remain; i++){
+    ctx.strokeStyle = `rgba(225,225,225,${.5 - i*.07})`;
+    ctx.beginPath();
+    ctx.moveTo(W + i*1.6, i*1.2);
+    ctx.lineTo(W + i*1.6, H - i*1.2);
+    ctx.stroke();
+  }
+  for (let i=1; i<=read; i++){
+    ctx.strokeStyle = `rgba(225,225,225,${.5 - i*.07})`;
+    ctx.beginPath();
+    ctx.moveTo(-W - i*1.6, i*1.2);
+    ctx.lineTo(-W - i*1.6, H - i*1.2);
+    ctx.stroke();
+  }
+}
+
+function drawStatic(){
+  const ctx = bctx;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,bookCv.width,bookCv.height);
+  bookSpace(ctx);
+  const [L,R] = spreadPages(spread);
+  const xa = L ? -W : 0, xb = R ? W : 0;
+  if (xa !== xb) drawBase(ctx, xa, xb);
+  if (L) drawPageFace(ctx, bm(L), -W);
+  if (R) drawPageFace(ctx, bm(R), 0);
+  drawSpine(ctx, !!L, !!R);
+  drawEdges(ctx);
+  updateUI();
+  renderAnno();
+}
+
+/* ── render de un frame de pliegue ── */
+function drawFold(){
+  if (!fold) return;
+  const ctx = bctx;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,bookCv.width,bookCv.height);
+  bookSpace(ctx);
+
+  const f = fold;
+  const C = f.C, P = f.P;
+  const ddx = P.x-C.x, ddy = P.y-C.y;
+  const len = Math.hypot(ddx, ddy);
+
+  drawBase(ctx, -W, W);
+
+  if (len < .8){
+    // sin pliegue visible aún
+    if (f.pages.staticL) drawPageFace(ctx, bm(f.pages.staticL), -W);
+    else if (f.dir<0 && f.pages.front) drawPageFace(ctx, bm(f.pages.front), -W);
+    if (f.dir>0 && f.pages.front) drawPageFace(ctx, bm(f.pages.front), 0);
+    else if (f.pages.staticR) drawPageFace(ctx, bm(f.pages.staticR), 0);
+    drawSpine(ctx, true, true);
+    return;
+  }
+
+  const u = { x: ddx/len, y: ddy/len };
+  const M = { x:(C.x+P.x)/2, y:(C.y+P.y)/2 };
+  const side = f.dir > 0 ? 1 : -1;
+  const rectPoly = pageRectPoly(side);
+  const frontPoly  = clipHalf(rectPoly, M, u, 1);   // parte plana visible
+  const cornerPoly = clipHalf(rectPoly, M, u, -1);  // área ya destapada
+  const flapPoly   = cornerPoly.map(pt => reflectPt(pt, M, u));
+
+  /* 1 — mitad estática opuesta */
+  if (f.dir > 0){
+    if (f.pages.staticL) drawPageFace(ctx, bm(f.pages.staticL), -W);
+  } else {
+    if (f.pages.staticR) drawPageFace(ctx, bm(f.pages.staticR), 0);
+  }
+
+  /* 2 — página que se revela debajo */
+  if (f.pages.under){
+    drawPageFace(ctx, bm(f.pages.under), side>0 ? 0 : -W);
+  }
+
+  /* sombra del papel levantado sobre la página revelada */
+  if (cornerPoly.length > 2){
+    ctx.save();
+    pathPoly(ctx, cornerPoly); ctx.clip();
+    const reach = Math.min(90, len*.55);
+    const g = ctx.createLinearGradient(M.x, M.y, M.x - u.x*reach, M.y - u.y*reach);
+    g.addColorStop(0,'rgba(0,0,0,.30)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(side>0?0:-W, 0, W, H);
+    ctx.restore();
+  }
+
+  /* 3 — frente de la hoja, recortado a la parte plana */
+  if (frontPoly.length > 2 && f.pages.front){
+    ctx.save();
+    pathPoly(ctx, frontPoly); ctx.clip();
+    drawPageFace(ctx, bm(f.pages.front), side>0 ? 0 : -W);
+    ctx.restore();
+  }
+
+  drawSpine(ctx, true, true);
+  drawEdges(ctx);
+
+  /* 4 — sombra proyectada por la solapa */
+  if (flapPoly.length > 2){
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.5)';
+    ctx.shadowBlur = 28;
+    ctx.shadowOffsetX = -u.x*10; ctx.shadowOffsetY = -u.y*10 + 6;
+    pathPoly(ctx, flapPoly);
+    ctx.fillStyle = 'rgba(0,0,0,.45)';
+    ctx.fill();
+    ctx.restore();
+
+    /* 5 — reverso de la hoja (página siguiente reflejada) */
+    ctx.save();
+    pathPoly(ctx, flapPoly); ctx.clip();
+    ctx.save();
+    applyReflect(ctx, M, u);
+    ctx.fillStyle = '#fff';
+    if (side > 0){
+      ctx.translate(W, 0); ctx.scale(-1, 1);
+      ctx.fillRect(0,0,W,H);
+      const b = bm(f.pages.back);
+      if (b){ const bh = W*(b.height/b.width); ctx.drawImage(b, 0, Math.max(0,(H-bh)/2), W, Math.min(H,bh)); }
+    } else {
+      ctx.scale(-1, 1);
+      ctx.fillRect(0,0,W,H);
+      const b = bm(f.pages.back);
+      if (b){ const bh = W*(b.height/b.width); ctx.drawImage(b, 0, Math.max(0,(H-bh)/2), W, Math.min(H,bh)); }
+    }
+    ctx.restore();
+
+    /* sombreado del reverso: tinte + pliegue */
+    ctx.fillStyle = 'rgba(0,0,0,.05)';
+    ctx.fillRect(-W,0,2*W,H);
+    const creaseReach = Math.min(46, len*.32);
+    const cg = ctx.createLinearGradient(M.x, M.y, M.x + u.x*creaseReach, M.y + u.y*creaseReach);
+    cg.addColorStop(0,'rgba(0,0,0,.30)');
+    cg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle = cg;
+    ctx.fillRect(-W,0,2*W,H);
+    /* brillo del papel en el doblez */
+    const hg = ctx.createLinearGradient(M.x + u.x*2, M.y + u.y*2, M.x + u.x*10, M.y + u.y*10);
+    hg.addColorStop(0,'rgba(255,255,255,.25)');
+    hg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = hg;
+    ctx.fillRect(-W,0,2*W,H);
+    ctx.restore();
+  }
+}
+
+/* ═════════════════════════════════════════
+   ANIMACIÓN DE HOJA
+═════════════════════════════════════════ */
+function canFlip(dir){
+  if (mode === 'draw' || !pdfDoc || zoom > 1.05) return false;
+  if (dir > 0) return spread < totalSpreads()-1;
+  return spread > 0;
+}
+
+function foldPagesFor(dir){
+  const [L,R] = spreadPages(spread);
+  if (dir > 0){
+    return { front: R, back: R+1 <= totalPages ? R+1 : null,
+             under: R+2 <= totalPages ? R+2 : null, staticL: L, staticR: null };
+  }
+  return { front: L, back: L-1 >= 1 ? L-1 : null,
+           under: L-2 >= 1 ? L-2 : null, staticL: null, staticR: R };
+}
+
+function startFold(dir, cornerY, viaDrag, startP){
+  if (!canFlip(dir) || fold) return false;
+  const pages = foldPagesFor(dir);
+  const C = { x: dir>0 ? W : -W, y: cornerY };
+  fold = {
+    dir, C, pages,
+    P: startP ? clampP(startP, C) : { x: C.x, y: C.y },
+    vx: 0, vy: 0,
+    phase: viaDrag ? 'drag' : 'auto',
+    t: 0, last: performance.now()
+  };
+  annoCv.style.opacity = '0';
+  /* las páginas cargan en segundo plano; el tick las pinta al llegar */
+  ensure([pages.front, pages.back, pages.under, pages.staticL, pages.staticR])
+    .then(() => { if (!fold) drawStatic(); });
+  if (!rafId) rafId = requestAnimationFrame(tick);
+  return true;
+}
+
+function autoCommit(){
+  return fold.dir > 0 ? fold.P.x < W*.42 : fold.P.x > -W*.42;
+}
+
+function releaseFold(commit){
+  if (!fold) return;
+  fold.phase = 'ease';
+  fold.easeStart = { x: fold.P.x, y: fold.P.y };
+  fold.easeEnd   = commit ? { x: -fold.C.x, y: fold.C.y } : { x: fold.C.x, y: fold.C.y };
+  fold.easeDur   = 340;
+  fold.t         = 0;
+  fold.commit    = commit;
+}
+
+function easeInOutCubic(t){ return t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2; }
+function easeOutCubic(t){ return 1 - Math.pow(1-t, 3); }
+
+function tick(now){
+  /* ── estructura robusta: RAF se programa AL FINAL, nunca al principio ── */
+  if (!fold){ rafId = 0; return; }
+
+  const f = fold;
+  const dt = Math.min(40, now - f.last); f.last = now;
+
+  /* vigilante: drag sin dedo → liberar automáticamente */
+  if (f.phase === 'drag' && !pd) releaseFold(autoCommit());
+
+  if (f.phase === 'auto'){
+    f.t += dt / 900;
+    const e = easeInOutCubic(Math.min(1, f.t));
+    f.P.x = f.C.x * (1 - 2*e);            /* C.x → -C.x exacto */
+    const lift = Math.sin(Math.PI*e) * H * .16;
+    f.P.y = f.C.y === 0 ? lift : H - lift;
+    f.P = clampP(f.P, f.C);
+    if (f.t >= 1){ finishFold(true); return; }
+  }
+  else if (f.phase === 'ease'){
+    f.t += dt / f.easeDur;
+    if (f.t >= 1){ finishFold(f.commit); return; }
+    const e = easeOutCubic(f.t);
+    f.P.x = f.easeStart.x + (f.easeEnd.x - f.easeStart.x) * e;
+    f.P.y = f.easeStart.y + (f.easeEnd.y - f.easeStart.y) * e;
+    /* sin clamp en ease: el destino ya es válido, evita saltos */
+  }
+  /* fase 'drag': P actualizado por pointermove, solo dibujar */
+
+  drawFold();
+  rafId = requestAnimationFrame(tick);  /* ← aquí, no al principio */
+}
+
+function finishFold(committed){
+  const dir = fold.dir;
+  fold = null;        /* cancela el loop: próximo tick ve fold===null y para */
+  rafId = 0;
+  if (committed) spread += dir;
+  drawStatic();
+  annoCv.style.opacity = '1';
+  prefetch();
+}
+
+async function jumpTo(s){
+  if (s === spread || mode === 'draw' || fold) return;
+  s = Math.max(0, Math.min(totalSpreads()-1, s));
+  const [L,R] = spreadPages(s);
+  wrap.style.opacity = '0';
+  await ensure([L,R]);
+  setTimeout(() => {
+    spread = s;
+    drawStatic();
+    wrap.style.opacity = '1';
+    prefetch();
+  }, 180);
+}
+
+/* ═════════════════════════════════════════
+   ANOTACIONES
+═════════════════════════════════════════ */
+function getAnno(p){
+  if (!anno.has(p)){
+    const cv = document.createElement('canvas');
+    cv.width = STORE_W; cv.height = STORE_H;
+    anno.set(p, { ops: [], store: cv });
+  }
+  return anno.get(p);
+}
+
+function replayOp(ctx, op){
+  const sw = op.wNorm * STORE_W;
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (op.tool === 'eraser'){
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = sw;
+    strokePath(ctx, op.pts, false, sw);
+  }
+  else if (op.tool === 'zone'){
+    const [a,b] = op.pts;
+    const x = Math.min(a.x,b.x)*STORE_W, y = Math.min(a.y,b.y)*STORE_H;
+    const w = Math.abs(b.x-a.x)*STORE_W, h = Math.abs(b.y-a.y)*STORE_H;
+    ctx.globalAlpha = .15; ctx.fillStyle = op.color;
+    ctx.fillRect(x,y,w,h);
+    ctx.globalAlpha = 1; ctx.strokeStyle = op.color; ctx.lineWidth = sw;
+    ctx.setLineDash([sw*2.4, sw*1.8]);
+    ctx.strokeRect(x,y,w,h);
+  }
+  else if (op.tool === 'arrow'){
+    const [a,b] = op.pts;
+    const ax = a.x*STORE_W, ay = a.y*STORE_H, bx = b.x*STORE_W, by = b.y*STORE_H;
+    ctx.strokeStyle = op.color; ctx.fillStyle = op.color; ctx.lineWidth = sw;
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
+    const ang = Math.atan2(by-ay, bx-ax), hl = Math.max(14, sw*3.4);
+    ctx.beginPath();
+    ctx.moveTo(bx,by);
+    ctx.lineTo(bx - hl*Math.cos(ang-.42), by - hl*Math.sin(ang-.42));
+    ctx.lineTo(bx - hl*Math.cos(ang+.42), by - hl*Math.sin(ang+.42));
+    ctx.closePath(); ctx.fill();
+  }
+  else {
+    ctx.globalAlpha = op.alpha || 1;
+    ctx.strokeStyle = op.color;
+    ctx.lineWidth = sw;
+    strokePath(ctx, op.pts, op.varW, sw);
+  }
+  ctx.restore();
+}
+
+function strokePath(ctx, pts, varW, baseW){
+  if (pts.length < 2){
+    if (pts.length === 1){
+      ctx.beginPath();
+      ctx.arc(pts[0].x*STORE_W, pts[0].y*STORE_H, ctx.lineWidth/2, 0, 7);
+      ctx.fillStyle = ctx.strokeStyle; ctx.fill();
+    }
+    return;
+  }
+  if (varW){
+    for (let i=1; i<pts.length; i++){
+      const a = pts[i-1], b = pts[i];
+      const p = ((a.p ?? .5) + (b.p ?? .5))/2;
+      ctx.lineWidth = baseW * (.35 + p*1.3);
+      ctx.beginPath();
+      ctx.moveTo(a.x*STORE_W, a.y*STORE_H);
+      ctx.lineTo(b.x*STORE_W, b.y*STORE_H);
+      ctx.stroke();
+    }
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x*STORE_W, pts[0].y*STORE_H);
+    for (let i=1; i<pts.length-1; i++){
+      const mx = (pts[i].x + pts[i+1].x)/2 * STORE_W;
+      const my = (pts[i].y + pts[i+1].y)/2 * STORE_H;
+      ctx.quadraticCurveTo(pts[i].x*STORE_W, pts[i].y*STORE_H, mx, my);
+    }
+    const l = pts[pts.length-1];
+    ctx.lineTo(l.x*STORE_W, l.y*STORE_H);
+    ctx.stroke();
+  }
+}
+
+function rebuild(p){
+  const a = anno.get(p);
+  if (!a) return;
+  const ctx = a.store.getContext('2d');
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,STORE_W,STORE_H);
+  a.ops.forEach(op => replayOp(ctx, op));
+}
+
+function renderAnno(){
+  actx.setTransform(1,0,0,1,0,0);
+  actx.clearRect(0,0,annoCv.width,annoCv.height);
+  bookSpace(actx);
+  const [L,R] = spreadPages(spread);
+  if (L && anno.has(L)) actx.drawImage(anno.get(L).store, -W, 0, W, H);
+  if (R && anno.has(R)) actx.drawImage(anno.get(R).store, 0, 0, W, H);
+}
+
+/* ── trazo en vivo ── */
+let stroke = null;
+
+function pageAt(bx){
+  const [L,R] = spreadPages(spread);
+  if (bx < 0) return L ? { p: L, rx: -W } : null;
+  return R ? { p: R, rx: 0 } : null;
+}
+
+function beginStroke(e, bx, by){
+  const hit = pageAt(bx);
+  if (!hit) return;
+  const t = TOOLS[tool];
+  stroke = {
+    tool, color, page: hit.p, rx: hit.rx,
+    w: t.w, alpha: t.alpha || 1,
+    varW: tool === 'pen' && e.pointerType === 'pen',
+    pts: [], live: [],
+    pid: e.pointerId, ptype: e.pointerType
+  };
+  addPoint(e, bx, by);
+}
+
+function addPoint(e, bx, by){
+  if (!stroke) return;
+  const nx = Math.max(0, Math.min(1, (bx - stroke.rx)/W));
+  const ny = Math.max(0, Math.min(1, by/H));
+  const pt = { x: nx, y: ny };
+  if (stroke.varW) pt.p = e.pressure || .5;
+  if (stroke.tool === 'zone' || stroke.tool === 'arrow'){
+    if (stroke.pts.length < 2) stroke.pts.push(pt);
+    else stroke.pts[1] = pt;
+  } else {
+    stroke.pts.push(pt);
+  }
+  if (stroke.tool === 'eraser'){
+    eraseLive();
+  } else {
+    requestLive();
+  }
+}
+
+let livePending = false;
+function requestLive(){
+  if (livePending) return;
+  livePending = true;
+  requestAnimationFrame(() => { livePending = false; drawLive(); });
+}
+
+function drawLive(){
+  lctx.setTransform(1,0,0,1,0,0);
+  lctx.clearRect(0,0,liveCv.width,liveCv.height);
+  if (!stroke) return;
+  bookSpace(lctx);
+  lctx.save();
+  lctx.translate(stroke.rx, 0);
+  lctx.scale(W/STORE_W, H/STORE_H);
+  replayOp(lctx, {
+    tool: stroke.tool, color: stroke.color, alpha: stroke.alpha,
+    wNorm: stroke.w / W, varW: stroke.varW, pts: stroke.pts
+  });
+  lctx.restore();
+}
+
+function eraseLive(){
+  if (!stroke || stroke.pts.length === 0) return;
+  const a = getAnno(stroke.page);
+  const ctx = a.store.getContext('2d');
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.strokeStyle = '#000';
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.lineWidth = (stroke.w / W) * STORE_W;
+  const n = stroke.pts.length;
+  const a1 = stroke.pts[Math.max(0,n-2)], b1 = stroke.pts[n-1];
+  ctx.beginPath();
+  ctx.moveTo(a1.x*STORE_W, a1.y*STORE_H);
+  ctx.lineTo(b1.x*STORE_W, b1.y*STORE_H);
+  ctx.stroke();
+  ctx.restore();
+  requestAnimationFrame(renderAnno);
+  /* anillo del borrador */
+  lctx.setTransform(1,0,0,1,0,0);
+  lctx.clearRect(0,0,liveCv.width,liveCv.height);
+  bookSpace(lctx);
+  lctx.strokeStyle = 'rgba(255,255,255,.7)';
+  lctx.lineWidth = 1.2;
+  lctx.beginPath();
+  lctx.arc(stroke.rx + b1.x*W, b1.y*H, stroke.w/2, 0, 7);
+  lctx.stroke();
+}
+
+function endStroke(){
+  if (!stroke) return;
+  const s = stroke; stroke = null;
+  lctx.setTransform(1,0,0,1,0,0);
+  lctx.clearRect(0,0,liveCv.width,liveCv.height);
+  if (s.pts.length === 0) return;
+  if ((s.tool === 'zone' || s.tool === 'arrow') && s.pts.length < 2) return;
+  const a = getAnno(s.page);
+  const op = {
+    tool: s.tool, color: s.color, alpha: s.alpha,
+    wNorm: s.w / W, varW: s.varW, pts: s.pts
+  };
+  a.ops.push(op);
+  lastDrawnPage = s.page;
+  undoStack.push(s.page);
+  if (undoStack.length > 80) undoStack.shift();
+  if (s.tool !== 'eraser'){
+    replayOp(a.store.getContext('2d'), op);
+  }
+  renderAnno();
+}
+
+/* ═════════════════════════════════════════
+   ZOOM / PAN
+═════════════════════════════════════════ */
+let zoom = 1, panX = 0, panY = 0;
+const ptrs = new Map();   // pointerId → {x,y,type} en stage coords
+let pinch = null;
+
+function clampPan(px, py, z){
+  z = z != null ? z : zoom;
+  return {
+    x: Math.max(cssW * (1 - z), Math.min(0, px)),
+    y: Math.max(cssH * (1 - z), Math.min(0, py))
+  };
+}
+function applyZoom(){
+  wrap.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+}
+function resetZoom(){
+  zoom = 1; panX = 0; panY = 0; applyZoom();
+}
+function touchPtrs(){ return [...ptrs.values()].filter(p => p.type === 'touch'); }
+
+/* ═════════════════════════════════════════
+   PUNTEROS
+═════════════════════════════════════════ */
+let pd = null;
+let doubleTapT = 0, doubleTapSX = 0, doubleTapSY = 0;
+
+function bxy(e){
+  // Convierte coords del evento → espacio del libro (origen en lomo-arriba)
+  const r = stage.getBoundingClientRect();
+  const cx = (e.clientX - r.left - panX) / zoom;   // undo CSS translate+scale
+  const cy = (e.clientY - r.top  - panY) / zoom;
+  return { x: cx - (offX + W), y: cy - offY };
+}
+function sxy(e){
+  const r = stage.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+stage.addEventListener('pointerdown', e => {
+  if (!pdfDoc || $('grid').classList.contains('show')) return;
+
+  const s = sxy(e);
+  ptrs.set(e.pointerId, { x: s.x, y: s.y, type: e.pointerType });
+  stage.setPointerCapture(e.pointerId);
+
+  const tp = touchPtrs();
+
+  /* ── 2 dedos touch → pellizco ── */
+  if (tp.length >= 2 && !fold){
+    if (stroke) endStroke();
+    pd = null;
+    const [a, b2] = tp;
+    const midX = (a.x + b2.x) / 2, midY = (a.y + b2.y) / 2;
+    pinch = {
+      initZoom: zoom, initPanX: panX, initPanY: panY,
+      initDist: Math.max(1, Math.hypot(b2.x - a.x, b2.y - a.y)),
+      midC: { x: (midX - panX) / zoom, y: (midY - panY) / zoom }
+    };
+    return;
+  }
+  if (pinch) return;
+
+  const b = bxy(e);
+
+  /* ── MODO DIBUJO ── */
+  if (mode === 'draw'){
+    if (e.pointerType === 'touch' && stroke && stroke.ptype === 'pen') return; // rechazo palma
+    if (e.pointerType === 'pen' && stroke && stroke.ptype === 'touch'){
+      stroke = null;
+      lctx.setTransform(1,0,0,1,0,0); lctx.clearRect(0,0,liveCv.width,liveCv.height);
+    }
+    if (stroke) return;
+    beginStroke(e, b.x, b.y);
+    return;
+  }
+
+  /* ── MODO LECTURA ── */
+  if (fold){
+    if (fold.phase === 'drag' && !pd) releaseFold(autoCommit());
+    return;
+  }
+  if (pd) return;
+
+  /* Doble tap → reset zoom */
+  const now = performance.now();
+  if (now - doubleTapT < 320 && Math.hypot(s.x - doubleTapSX, s.y - doubleTapSY) < 40 && zoom > 1.05){
+    resetZoom(); pd = null; doubleTapT = 0; return;
+  }
+  doubleTapT = now; doubleTapSX = s.x; doubleTapSY = s.y;
+
+  pd = { x: b.x, y: b.y, sx: s.x, sy: s.y, t: now, id: e.pointerId, dragging: false };
+
+  /* Esquinas para arrastrar hoja (solo sin zoom) */
+  if (zoom <= 1.05){
+    const cz = .34;
+    const inX = Math.abs(b.x) > W*(1-cz) && Math.abs(b.x) < W*1.08;
+    const topC = b.y < H*cz && b.y > -H*.06;
+    const botC = b.y > H*(1-cz) && b.y < H*1.06;
+    if (inX && (topC || botC)){
+      const dir = b.x > 0 ? 1 : -1;
+      if (canFlip(dir)) pd.corner = { dir, cy: topC ? 0 : H };
+    }
+  }
+});
+
+stage.addEventListener('pointermove', e => {
+  const s = sxy(e);
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { ...ptrs.get(e.pointerId), x: s.x, y: s.y });
+
+  const tp = touchPtrs();
+
+  /* ── actualizar pellizco ── */
+  if (pinch && tp.length >= 2){
+    const [a, b2] = tp;
+    const dist = Math.hypot(b2.x - a.x, b2.y - a.y);
+    const mid = { x: (a.x + b2.x)/2, y: (a.y + b2.y)/2 };
+    const nz = Math.max(1, Math.min(4, pinch.initZoom * dist / pinch.initDist));
+    const nx = mid.x - pinch.midC.x * nz;
+    const ny = mid.y - pinch.midC.y * nz;
+    const c = clampPan(nx, ny, nz);
+    zoom = nz; panX = c.x; panY = c.y;
+    applyZoom();
+    return;
+  }
+
+  const b = bxy(e);
+
+  /* ── modo dibujo ── */
+  if (mode === 'draw'){
+    if (stroke && e.pointerId === stroke.pid) addPoint(e, b.x, b.y);
+    return;
+  }
+
+  if (!pd || e.pointerId !== pd.id) return;
+
+  /* fold drag */
+  if (fold && fold.phase === 'drag'){
+    fold.P = clampP({ x: b.x, y: b.y }, fold.C);
+    if (!rafId) rafId = requestAnimationFrame(tick);
+    return;
+  }
+
+  /* iniciar drag de esquina */
+  if (pd.corner && !pd.dragging && zoom <= 1.05){
+    if (Math.hypot(b.x - pd.x, b.y - pd.y) > 7){
+      pd.dragging = true;
+      startFold(pd.corner.dir, pd.corner.cy, true, { x: b.x, y: b.y });
+    }
+    return;
+  }
+
+  /* pan con un dedo cuando está zoomeado */
+  if (zoom > 1.05 && !pd.corner){
+    if (!pd.panStart) pd.panStart = { panX, panY, sx: s.x, sy: s.y };
+    const c = clampPan(pd.panStart.panX + (s.x - pd.panStart.sx),
+                       pd.panStart.panY + (s.y - pd.panStart.sy));
+    panX = c.x; panY = c.y;
+    applyZoom();
+  }
+});
+
+stage.addEventListener('pointerup', e => {
+  ptrs.delete(e.pointerId);
+
+  if (pinch){
+    if (touchPtrs().length < 2) pinch = null;
+    pd = null; return;
+  }
+
+  if (mode === 'draw'){
+    if (stroke && e.pointerId === stroke.pid) endStroke();
+    return;
+  }
+
+  if (!pd || e.pointerId !== pd.id){ pd = null; return; }
+
+  const b = bxy(e);
+  const dt = performance.now() - pd.t;
+  const dx = b.x - pd.x;
+  const dist = Math.hypot(dx, b.y - pd.y);
+
+  if (fold && fold.phase === 'drag'){
+    if (dist < 9 && dt < 300){ fold.phase = 'auto'; fold.t = .06; }
+    else releaseFold(autoCommit());
+    pd = null; return;
+  }
+
+  if (zoom <= 1.05){
+    if (dist < 10 && dt < 350){
+      if (b.y > -H*.1 && b.y < H*1.1){
+        if (b.x > W*.22 && b.x < W*1.1 && canFlip(1)) startFold(1, H, false);
+        else if (b.x < -W*.22 && b.x > -W*1.1 && canFlip(-1)) startFold(-1, H, false);
+      }
+    } else if (Math.abs(dx) > 56 && dt < 600){
+      if (dx < 0 && canFlip(1)) startFold(1, H, false);
+      else if (dx > 0 && canFlip(-1)) startFold(-1, H, false);
+    }
+  }
+  pd = null;
+});
+
+stage.addEventListener('pointercancel', e => {
+  ptrs.delete(e.pointerId);
+  if (pinch && touchPtrs().length < 2) pinch = null;
+  if (stroke && e.pointerId === stroke.pid){ endStroke(); return; }
+  if (pd && e.pointerId === pd.id){
+    if (fold && fold.phase === 'drag') releaseFold(autoCommit());
+    pd = null;
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (!pdfDoc || mode === 'draw') return;
+  if (e.key === 'ArrowRight' || e.key === ' '){ e.preventDefault(); if (canFlip(1)) startFold(1, H, false); }
+  else if (e.key === 'ArrowLeft'){ e.preventDefault(); if (canFlip(-1)) startFold(-1, H, false); }
+  else if (e.key === 'Home') jumpTo(0);
+  else if (e.key === 'End') jumpTo(totalSpreads()-1);
+  else if (e.key.toLowerCase() === 'f') toggleFS();
+  else if ((e.key === '=' || e.key === '+') && (e.metaKey || e.ctrlKey)){ e.preventDefault(); scaleAt(cssW/2, cssH/2, 1.25); }
+  else if (e.key === '-' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); scaleAt(cssW/2, cssH/2, 1/1.25); }
+  else if (e.key === '0' && (e.metaKey || e.ctrlKey)){ e.preventDefault(); resetZoom(); }
+});
+
+/* ── wheel: pinch Mac trackpad (ctrlKey) y scroll ── */
+function scaleAt(sx, sy, factor){
+  const nz = Math.max(1, Math.min(4, zoom * factor));
+  if (nz === zoom) return;
+  const cx = (sx - panX) / zoom;
+  const cy = (sy - panY) / zoom;
+  const c = clampPan(sx - cx * nz, sy - cy * nz, nz);
+  zoom = nz; panX = c.x; panY = c.y;
+  applyZoom();
+}
+
+stage.addEventListener('wheel', e => {
+  if (!pdfDoc) return;
+  e.preventDefault();
+  const s = sxy(e);
+  if (e.ctrlKey){
+    /* pellizco trackpad Mac / Ctrl+scroll */
+    const factor = Math.pow(0.998, e.deltaY * 2.2);
+    scaleAt(s.x, s.y, factor);
+  } else {
+    /* scroll para pan cuando hay zoom, o pasar página cuando no */
+    if (zoom > 1.05){
+      const c = clampPan(panX - e.deltaX, panY - e.deltaY);
+      panX = c.x; panY = c.y;
+      applyZoom();
+    } else {
+      /* sin zoom: scroll vertical pasa página */
+      if (Math.abs(e.deltaY) > 40 && !fold && mode === 'read'){
+        if (e.deltaY > 0 && canFlip(1)) startFold(1, H, false);
+        else if (e.deltaY < 0 && canFlip(-1)) startFold(-1, H, false);
+      }
+    }
+  }
+}, { passive: false });
+
+/* ═════════════════════════════════════════
+   MODOS / UI
+═════════════════════════════════════════ */
+function setMode(m){
+  mode = m;
+  const draw = m === 'draw';
+  $('seg-read').classList.toggle('on', !draw);
+  $('seg-draw').classList.toggle('on', draw);
+  $('tools').classList.toggle('show', draw);
+  $('stage-hint').style.opacity = draw ? '0' : '1';
+  $('btn-prev').disabled = draw || !canFlipUI(-1);
+  $('btn-next').disabled = draw || !canFlipUI(1);
+  $('btn-grid').disabled = draw;
+  stage.style.cursor = draw ? 'crosshair' : '';
+}
+function canFlipUI(dir){
+  if (dir > 0) return spread < totalSpreads()-1;
+  return spread > 0;
+}
+
+$('seg-draw').addEventListener('click', () => {
+  if (mode === 'draw') return;
+  if (fold) return;
+  setMode('draw');
+});
+$('seg-read').addEventListener('click', () => {
+  if (mode === 'read') return;
+  if (stroke) endStroke();
+  setMode('read');            // cambio instantáneo, sin modal
+});
+
+/* herramientas */
+document.querySelectorAll('.tool').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tool').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    tool = btn.dataset.tool;
+    const t = TOOLS[tool];
+    const sl = $('thick');
+    sl.min = t.min; sl.max = t.max; sl.value = t.w;
+    updateThickDot();
+  });
+});
+
+const sl = $('thick');
+sl.addEventListener('input', () => {
+  TOOLS[tool].w = +sl.value;
+  updateThickDot();
+});
+function updateThickDot(){
+  const d = Math.max(4, Math.min(24, TOOLS[tool].w * .8));
+  const dot = $('thick-dot');
+  dot.style.width = d+'px'; dot.style.height = d+'px';
+  dot.style.background = tool === 'eraser' ? '#888' : color;
+}
+
+/* colores */
+const swc = $('swatches');
+SWATCH_COLORS.forEach((c,i) => {
+  const b = document.createElement('button');
+  b.className = 'sw' + (i===0 ? ' on' : '');
+  b.style.background = c;
+  b.setAttribute('aria-label', c);
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.sw').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    color = c;
+    updateThickDot();
+  });
+  swc.appendChild(b);
+});
+
+/* deshacer */
+$('btn-undo').addEventListener('click', () => {
+  if (!undoStack.length) return;
+  const p = undoStack.pop();
+  const a = anno.get(p);
+  if (a && a.ops.length){
+    a.ops.pop();
+    rebuild(p);
+    renderAnno();
+  }
+});
+
+/* borrar todo — SOLO una página (la última anotada), con confirmación explícita */
+let clearTimer = null;
+function targetClearPage(){
+  const [L,R] = spreadPages(spread);
+  const annotated = [L,R].filter(p => p && anno.has(p) && anno.get(p).ops.length);
+  if (!annotated.length) return null;
+  if (annotated.includes(lastDrawnPage)) return lastDrawnPage;
+  return annotated[annotated.length-1]; // si hay duda, la más a la derecha
+}
+function resetClearBtn(){
+  clearTimeout(clearTimer);
+  $('btn-clear').classList.remove('confirm');
+  $('clear-label').textContent = 'Borrar todo';
+}
+$('btn-clear').addEventListener('click', () => {
+  const btn = $('btn-clear');
+  if (!btn.classList.contains('confirm')){
+    const target = targetClearPage();
+    if (target === null){
+      $('clear-label').textContent = 'Sin trazos';
+      clearTimer = setTimeout(resetClearBtn, 1400);
+      return;
+    }
+    btn.dataset.target = target;
+    btn.classList.add('confirm');
+    $('clear-label').textContent = `¿Borrar pág. ${target}?`;
+    clearTimer = setTimeout(resetClearBtn, 3000);
+    return;
+  }
+  const p = +btn.dataset.target;
+  resetClearBtn();
+  if (p && anno.has(p)){
+    anno.delete(p);
+    if (lastDrawnPage === p) lastDrawnPage = null;
+    for (let i=undoStack.length-1; i>=0; i--) if (undoStack[i]===p) undoStack.splice(i,1);
+  }
+  renderAnno();
+});
+
+/* nav superior */
+$('btn-prev').addEventListener('click', () => { if (canFlip(-1)) startFold(-1, H, false); });
+$('btn-next').addEventListener('click', () => { if (canFlip(1)) startFold(1, H, false); });
+
+function updateUI(){
+  const [L,R] = spreadPages(spread);
+  let label;
+  if (L && R) label = `${L}–${R}`;
+  else label = `${L || R || 1}`;
+  $('pind').innerHTML = `<b>${label}</b> / ${totalPages}`;
+  const draw = mode === 'draw';
+  $('btn-prev').disabled = draw || !canFlipUI(-1);
+  $('btn-next').disabled = draw || !canFlipUI(1);
+  const ts = totalSpreads();
+  $('progress-fill').style.width = (ts<=1 ? 100 : spread/(ts-1)*100) + '%';
+  document.querySelectorAll('.gp').forEach(g => {
+    const p = +g.dataset.p;
+    g.classList.toggle('cur', p===L || p===R);
+  });
+}
+
+/* ═════════════════════════════════════════
+   GRID DE PÁGINAS
+═════════════════════════════════════════ */
+let gridBuilt = false;
+$('btn-grid').addEventListener('click', () => {
+  $('grid').classList.add('show');
+  if (!gridBuilt){ gridBuilt = true; buildGrid(); }
+});
+$('grid-close').addEventListener('click', () => $('grid').classList.remove('show'));
+
+async function buildGrid(){
+  const body = $('grid-body');
+  body.style.setProperty('--pgar', (1/aspect).toFixed(4));
+  const frag = document.createDocumentFragment();
+  const items = [];
+  for (let p=1; p<=totalPages; p++){
+    const d = document.createElement('div');
+    d.className = 'gp'; d.dataset.p = p;
+    d.innerHTML = `<i>${p}</i>`;
+    d.addEventListener('click', () => {
+      $('grid').classList.remove('show');
+      jumpTo(Math.floor(p/2));
+    });
+    frag.appendChild(d);
+    items.push(d);
+  }
+  body.appendChild(frag);
+  updateUI();
+  for (let p=1; p<=totalPages; p++){
+    if (!$('grid')) return;
+    try {
+      const page = await pdfDoc.getPage(p);
+      const base = page.getViewport({ scale: 1 });
+      const scale = 260 / base.width;
+      const vp = page.getViewport({ scale });
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+      const ctx = cv.getContext('2d', { alpha:false });
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      items[p-1].prepend(cv);
+    } catch(e){ /* página omitida */ }
+  }
+}
+
+/* ═════════════════════════════════════════
+   PANTALLA COMPLETA / NUEVO
+═════════════════════════════════════════ */
+function toggleFS(){
+  const el = document.documentElement;
+  try {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement){
+      (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+  } catch(e){}
+}
+$('btn-fs').addEventListener('click', toggleFS);
+
+$('btn-new').addEventListener('click', () => {
+  pdfDoc = null; fold = null; stroke = null;
+  pageCache.clear(); anno.clear(); undoStack.length = 0;
+  lastDrawnPage = null;
+  resetZoom(); ptrs.clear(); pinch = null; pd = null;
+  gridBuilt = false; $('grid-body').innerHTML = '';
+  setMode('read');
+  $('app').style.display = 'none';
+  $('screen-upload').style.display = 'flex';
+  $('file-input').value = '';
+});
+
+/* ═════════════════════════════════════════
+   CARGA
+═════════════════════════════════════════ */
+$('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) loadPDF(e.target.files[0]);
+});
+/* Drag-drop sobre la pantalla completa de upload */
+const upScreen = $('screen-upload');
+upScreen.addEventListener('dragover', e => { e.preventDefault(); upScreen.style.background = 'rgba(243,50,131,.06)'; });
+upScreen.addEventListener('dragleave', () => { upScreen.style.background = ''; });
+upScreen.addEventListener('drop', e => {
+  e.preventDefault(); upScreen.style.background = '';
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') loadPDF(f);
+});
+
+async function loadPDF(file){
+  fileName = file.name.replace(/\.pdf$/i,'');
+  $('screen-upload').style.display = 'none';
+  $('screen-loading').style.display = 'flex';
+  try {
+    const buf = await file.arrayBuffer();
+    pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+    totalPages = pdfDoc.numPages;
+    spread = 0;
+    const p1 = await pdfDoc.getPage(1);
+    const vp = p1.getViewport({ scale: 1 });
+    aspect = vp.height / vp.width;
+    STORE_H = Math.round(STORE_W * aspect);
+    $('doc-name').textContent = fileName;
+    $('screen-loading').style.display = 'none';
+    $('app').style.display = 'flex';
+    layout();
+    const [L,R] = spreadPages(0);
+    await ensure([L,R]);
+    drawStatic();
+    prefetch();
+    setMode('read');
+  } catch(err){
+    $('screen-loading').style.display = 'none';
+    $('screen-upload').style.display = 'flex';
+    alert('No se pudo abrir el PDF. Intenta con otro archivo.');
+  }
+}
+
+/* resize */
+let rzT;
+window.addEventListener('resize', () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(() => {
+    if (!pdfDoc) return;
+    layout();
+    const [L,R] = spreadPages(spread);
+    ensure([L,R]).then(() => { if (!fold) drawStatic(); });
+  }, 180);
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 320);
+});
+
+/* ── Service Worker (PWA / offline) ── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
